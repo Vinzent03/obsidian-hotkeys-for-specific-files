@@ -1,4 +1,5 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { FileSuggest } from './file-suggest';
 interface MyPluginSettings {
 	files: string[];
 }
@@ -69,18 +70,23 @@ class SettingsTab extends PluginSettingTab {
 			this.addTextField(index, this.plugin.settings.files[index]);
 			index++;
 		}
+
 	}
 	addTextField(index: number, text: string = "") {
 		new Setting(this.containerEl)
 			.setName("File to open with command")
 			.setDesc("With file extension!")
-			.addText(cb => cb
-				.setPlaceholder("Directory/file.md")
-				.setValue(this.plugin.settings.files[index])
-				.setValue(text)
-				.onChange((value) => {
-					this.plugin.settings.files[index] = value;
-					this.plugin.saveSettings();
-				}));
+			.addText(cb => {
+				new FileSuggest(this.app, cb.inputEl);
+				cb
+					.setPlaceholder("Directory/file.md")
+					.setValue(this.plugin.settings.files[index])
+					.setValue(text)
+					.onChange((value) => {
+						this.plugin.settings.files[index] = value;
+						this.plugin.saveSettings();
+					});
+			});
+
 	}
 }
