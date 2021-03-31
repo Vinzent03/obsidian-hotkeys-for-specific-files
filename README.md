@@ -3,7 +3,9 @@
 Plugin for [Obsidian](https://obsidian.md)
 
 ## How to use
-With this plugin, you can open specific files with a hotkey. You can set the files in the settings. A command will be generated for each file, then you can set your hotkey in the default hotkeys section in Obsidian. Already added commands will disappear after a reload of Obsidian.
+With this plugin, you can open specific files with a hotkey. You can set the files in the settings. A command will be generated for each file, then you can set your hotkey in the default hotkeys section in Obsidian.
+
+![Settings](https://raw.githubusercontent.com/Vinzent03/obsidian-hotkeys-for-specific-files/master/settings.png)
 
 ## Compatibility
 Custom plugins are only available for Obsidian v0.9.7+.
