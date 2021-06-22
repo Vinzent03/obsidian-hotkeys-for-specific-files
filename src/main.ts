@@ -1,14 +1,14 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, MarkdownView, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 import { FileSuggest } from './file-suggest';
-interface MyPluginSettings {
+interface SpecificFilesSettings {
 	files: string[];
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
+const DEFAULT_SETTINGS: SpecificFilesSettings = {
 	files: []
 };
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class SpecificFilesPlugin extends Plugin {
+	settings: SpecificFilesSettings;
 	async onload() {
 		await this.loadSettings();
 		console.log('loading ' + this.manifest.name);
@@ -27,20 +27,35 @@ export default class MyPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-	setCommands(app: MyPlugin) {
+	setCommands(app: SpecificFilesPlugin) {
 		for (const fileName of this.settings.files) {
 			app.addCommand({
 				id: fileName,
 				name: `Open ${fileName.substring(0, fileName.lastIndexOf("."))}`,
-				callback: () => app.app.workspace.openLinkText(fileName, "")
+				callback: () => {
+					let found = false;
+					this.app.workspace.iterateAllLeaves(leaf => {
+						const file: TFile = (leaf.view as any).file;
+						if (file?.path === fileName) {
+							this.app.workspace.revealLeaf(leaf);
+							if (leaf.view instanceof MarkdownView) {
+								leaf.view.editor.focus();
+							}
+							found = true;
+						}
+					});
+					if (!found) {
+						app.app.workspace.openLinkText(fileName, "");
+					}
+				}
 			});
 		}
 	}
 }
 
 class SettingsTab extends PluginSettingTab {
-	plugin: MyPlugin;
-	constructor(app: App, plugin: MyPlugin) {
+	plugin: SpecificFilesPlugin;
+	constructor(app: App, plugin: SpecificFilesPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
