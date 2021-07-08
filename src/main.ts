@@ -14,6 +14,29 @@ export default class SpecificFilesPlugin extends Plugin {
 		console.log('loading ' + this.manifest.name);
 		this.addSettingTab(new SettingsTab(this.app, this));
 		this.setCommands(this);
+		this.app.vault.on("rename", (file, oldPath) => {
+			const oldItemIndex = this.settings.files.findIndex(item => item === oldPath);
+			if (oldItemIndex >= 0) {
+				this.settings.files.splice(oldItemIndex, 1, file.path);
+				this.saveSettings();
+				const id = this.manifest.id + ":" + oldPath;
+				(this.app as any).commands.removeCommand(id);
+				const hotkeys = (this.app as any).hotkeyManager.getHotkeys(id);
+				this.setCommands(this);
+				if (hotkeys) {
+					(this.app as any).hotkeyManager.setHotkeys(this.manifest.id + ":" + file.path, hotkeys);
+				}
+			};
+		});
+		this.app.vault.on("delete", file => {
+			const oldItemIndex = this.settings.files.findIndex(item => item === file.path);
+			if (oldItemIndex >= 0) {
+				this.settings.files.splice(oldItemIndex, 1,);
+				this.saveSettings();
+				const id = this.manifest.id + ":" + file.path;
+				(this.app as any).commands.removeCommand(id);
+			};
+		});
 
 	}
 	onunload() {
@@ -27,9 +50,9 @@ export default class SpecificFilesPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-	setCommands(app: SpecificFilesPlugin) {
+	setCommands(plugin: SpecificFilesPlugin) {
 		for (const fileName of this.settings.files) {
-			app.addCommand({
+			plugin.addCommand({
 				id: fileName,
 				name: `Open ${fileName.substring(0, fileName.lastIndexOf("."))}`,
 				callback: () => {
@@ -45,7 +68,7 @@ export default class SpecificFilesPlugin extends Plugin {
 						}
 					});
 					if (!found) {
-						app.app.workspace.openLinkText(fileName, "");
+						plugin.app.workspace.openLinkText(fileName, "");
 					}
 				}
 			});
