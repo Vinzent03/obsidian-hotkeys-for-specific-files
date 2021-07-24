@@ -2,10 +2,12 @@ import { App, MarkdownView, Plugin, PluginSettingTab, Setting, TFile } from 'obs
 import { FileSuggest } from './file-suggest';
 interface SpecificFilesSettings {
 	files: string[];
+	useExistingPane: boolean;
 }
 
 const DEFAULT_SETTINGS: SpecificFilesSettings = {
-	files: []
+	files: [],
+	useExistingPane: true,
 };
 export default class SpecificFilesPlugin extends Plugin {
 	settings: SpecificFilesSettings;
@@ -56,18 +58,22 @@ export default class SpecificFilesPlugin extends Plugin {
 				id: fileName,
 				name: `Open ${fileName.substring(0, fileName.lastIndexOf("."))}`,
 				callback: () => {
-					let found = false;
-					this.app.workspace.iterateAllLeaves(leaf => {
-						const file: TFile = (leaf.view as any).file;
-						if (file?.path === fileName) {
-							this.app.workspace.revealLeaf(leaf);
-							if (leaf.view instanceof MarkdownView) {
-								leaf.view.editor.focus();
+					if (this.settings.useExistingPane) {
+						let found = false;
+						this.app.workspace.iterateAllLeaves(leaf => {
+							const file: TFile = (leaf.view as any).file;
+							if (file?.path === fileName) {
+								this.app.workspace.revealLeaf(leaf);
+								if (leaf.view instanceof MarkdownView) {
+									leaf.view.editor.focus();
+								}
+								found = true;
 							}
-							found = true;
+						});
+						if (!found) {
+							plugin.app.workspace.openLinkText(fileName, "");
 						}
-					});
-					if (!found) {
+					} else {
 						plugin.app.workspace.openLinkText(fileName, "");
 					}
 				}
@@ -92,6 +98,16 @@ class SettingsTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl("h2", { text: this.plugin.manifest.name });
 		let index = 0;
+		new Setting(containerEl)
+			.setName("Prefer existing panes")
+			.setDesc("Turn on to prefer existing panes and only open it in the current pane if the files isn't opened already.")
+			.addToggle(cb => {
+				cb.onChange((b) => {
+					this.plugin.settings.useExistingPane = b;
+					this.plugin.saveSettings();
+				});
+				cb.setValue(this.plugin.settings.useExistingPane);
+			});
 		new Setting(containerEl)
 			.setName("Add new commands (required after changes)")
 			.setDesc("To remove already added commands, you have to reload Obsidian (or disable and enable this plugin) ")
