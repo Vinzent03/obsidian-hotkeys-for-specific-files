@@ -7,6 +7,10 @@ With this plugin, you can open specific files with a hotkey. You can set the fil
 
 ![Settings](https://raw.githubusercontent.com/Vinzent03/obsidian-hotkeys-for-specific-files/master/settings.png)
 
+## Hover Editor Support
+
+This plugin supports the [Hover Editor](https://github.com/nothingislost/obsidian-hover-editor) plugin. If you have the Hover Editor plugin installed, you can open the file in the Hover Editor by using the provided command. Needs the setting to be enabled.
+
 ## Compatibility
 Custom plugins are only available for Obsidian v0.9.7+.
 

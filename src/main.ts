@@ -1,13 +1,15 @@
-import { App, MarkdownView, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { App, MarkdownView, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 import { FileSuggest } from './file-suggest';
 interface SpecificFilesSettings {
 	files: string[];
 	useExistingPane: boolean;
+	useHoverEditor: boolean;
 }
 
 const DEFAULT_SETTINGS: SpecificFilesSettings = {
 	files: [],
 	useExistingPane: true,
+	useHoverEditor: false,
 };
 export default class SpecificFilesPlugin extends Plugin {
 	settings: SpecificFilesSettings;
@@ -78,6 +80,26 @@ export default class SpecificFilesPlugin extends Plugin {
 					}
 				}
 			});
+
+			if (this.settings.useHoverEditor) {
+				plugin.addCommand({
+					id: `${fileName}-hover-editor`,
+					name: `Open ${fileName.substring(0, fileName.lastIndexOf("."))} in Hover Editor`,
+					callback: () => {
+						const hoverEditor = (this.app as any).plugins.plugins["obsidian-hover-editor"];
+						if (!hoverEditor) {
+							new Notice("Cannot find Hover Editor plugin. Please file an issue.");
+							return;
+						}
+
+						const leaf = hoverEditor.spawnPopover(undefined, () => {
+							this.app.workspace.setActiveLeaf(leaf, { focus: true });
+						});
+						const tfile = this.app.vault.getAbstractFileByPath(fileName);
+						leaf.openFile(tfile);
+					}
+				});
+			}
 		}
 	}
 }
@@ -107,6 +129,16 @@ class SettingsTab extends PluginSettingTab {
 					this.plugin.saveSettings();
 				});
 				cb.setValue(this.plugin.settings.useExistingPane);
+			});
+		new Setting(containerEl)
+			.setName("Add command to open file in Hover Editor")
+			.setDesc("Needs the Hover Editor plugin to be installed and enabled.")
+			.addToggle(cb => {
+				cb.onChange((b) => {
+					this.plugin.settings.useHoverEditor = b;
+					this.plugin.saveSettings();
+				});
+				cb.setValue(this.plugin.settings.useHoverEditor);
 			});
 		new Setting(containerEl)
 			.setName("Add new commands (required after changes)")
