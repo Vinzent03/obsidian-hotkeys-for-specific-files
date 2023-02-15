@@ -80,6 +80,13 @@ export default class SpecificFilesPlugin extends Plugin {
 					}
 				}
 			});
+			plugin.addCommand({
+				id: `${fileName}-new-tab`,
+				name: `Open ${fileName.substring(0, fileName.lastIndexOf("."))} in new tab`,
+				callback: () => {
+					plugin.app.workspace.openLinkText(fileName, "", "tab");
+				}
+			});
 
 			if (this.settings.useHoverEditor) {
 				plugin.addCommand({
