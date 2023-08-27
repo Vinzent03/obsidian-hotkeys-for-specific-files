@@ -5,10 +5,17 @@ import {
     PluginSettingTab,
     Setting,
     TFile,
+    moment,
 } from "obsidian";
 import { FileSuggest } from "./file-suggest";
+
+interface FileObject {
+    useMoment: boolean;
+    file: string;
+}
+
 interface SpecificFilesSettings {
-    files: string[];
+    files: FileObject[];
     useExistingPane: boolean;
     useHoverEditor: boolean;
 }
@@ -18,6 +25,17 @@ const DEFAULT_SETTINGS: SpecificFilesSettings = {
     useExistingPane: true,
     useHoverEditor: false,
 };
+
+function getMomentFromFile(file: string): string {
+    if (file.split(".").length > 1) {
+        return (
+            moment().format(file.substring(0, file.lastIndexOf("."))) +
+            file.substring(file.lastIndexOf("."))
+        );
+    } else {
+        return "";
+    }
+}
 export default class SpecificFilesPlugin extends Plugin {
     settings: SpecificFilesSettings;
     async onload() {
@@ -27,10 +45,10 @@ export default class SpecificFilesPlugin extends Plugin {
         this.setCommands(this);
         this.app.vault.on("rename", (file, oldPath) => {
             const oldItemIndex = this.settings.files.findIndex(
-                (item) => item === oldPath
+                (item) => item.file === oldPath
             );
             if (oldItemIndex >= 0) {
-                this.settings.files.splice(oldItemIndex, 1, file.path);
+                this.settings.files[oldItemIndex].file = file.path;
                 this.saveSettings();
                 const id = this.manifest.id + ":" + oldPath;
                 (this.app as any).commands.removeCommand(id);
@@ -46,7 +64,7 @@ export default class SpecificFilesPlugin extends Plugin {
         });
         this.app.vault.on("delete", (file) => {
             const oldItemIndex = this.settings.files.findIndex(
-                (item) => item === file.path
+                (item) => item.file === file.path
             );
             if (oldItemIndex >= 0) {
                 this.settings.files.splice(oldItemIndex, 1);
@@ -66,13 +84,36 @@ export default class SpecificFilesPlugin extends Plugin {
             DEFAULT_SETTINGS,
             await this.loadData()
         );
+        let changed = false;
+        for (var i = 0; i < this.settings.files.length; i++) {
+            if (typeof this.settings.files[i] == "string") {
+                changed = true;
+                this.settings.files[i] = {
+                    useMoment: false,
+                    file: this.settings.files[i] as unknown as string,
+                };
+            }
+        }
+        if (changed) {
+            this.saveSettings();
+        }
     }
 
     async saveSettings() {
         await this.saveData(this.settings);
     }
+
     setCommands(plugin: SpecificFilesPlugin) {
-        for (const fileName of this.settings.files) {
+        for (const fileObject of this.settings.files) {
+            if (!fileObject || !fileObject.file) continue;
+
+            const fileName: string = fileObject.file;
+            let parsedFileName: string;
+            if (fileObject.useMoment) {
+                parsedFileName = getMomentFromFile(fileName);
+            } else {
+                parsedFileName = fileName;
+            }
             plugin.addCommand({
                 id: fileName,
                 name: `Open ${fileName.substring(
@@ -82,9 +123,10 @@ export default class SpecificFilesPlugin extends Plugin {
                 callback: () => {
                     if (this.settings.useExistingPane) {
                         let found = false;
+
                         this.app.workspace.iterateAllLeaves((leaf) => {
                             const file: TFile = (leaf.view as any).file;
-                            if (!found && file?.path === fileName) {
+                            if (!found && file?.path === parsedFileName) {
                                 this.app.workspace.setActiveLeaf(leaf, {
                                     focus: true,
                                 });
@@ -92,10 +134,13 @@ export default class SpecificFilesPlugin extends Plugin {
                             }
                         });
                         if (!found) {
-                            plugin.app.workspace.openLinkText(fileName, "");
+                            plugin.app.workspace.openLinkText(
+                                parsedFileName,
+                                ""
+                            );
                         }
                     } else {
-                        plugin.app.workspace.openLinkText(fileName, "");
+                        plugin.app.workspace.openLinkText(parsedFileName, "");
                     }
                 },
             });
@@ -106,7 +151,11 @@ export default class SpecificFilesPlugin extends Plugin {
                     fileName.lastIndexOf(".")
                 )} in new tab`,
                 callback: () => {
-                    plugin.app.workspace.openLinkText(fileName, "", "tab");
+                    plugin.app.workspace.openLinkText(
+                        parsedFileName,
+                        "",
+                        "tab"
+                    );
                 },
             });
 
@@ -134,7 +183,9 @@ export default class SpecificFilesPlugin extends Plugin {
                             });
                         });
                         const tfile =
-                            this.app.vault.getAbstractFileByPath(fileName);
+                            this.app.vault.getAbstractFileByPath(
+                                parsedFileName
+                            );
                         leaf.openFile(tfile);
                     },
                 });
@@ -153,7 +204,7 @@ class SettingsTab extends PluginSettingTab {
     display(): void {
         // remove empty entries
         this.plugin.settings.files = this.plugin.settings.files.filter(
-            (file) => file != null && file != ""
+            (file) => file != null && file.file != ""
         );
         this.plugin.saveSettings();
 
@@ -209,24 +260,85 @@ class SettingsTab extends PluginSettingTab {
                     })
                     .setClass("mod-cta")
             );
+        new Setting(containerEl)
+            .setName("Create new text field with moment format")
+            .addButton((cb) =>
+                cb
+                    .setButtonText("Create")
+                    .onClick(() => {
+                        this.addTextField(index, { useMoment: true, file: "" });
+                        index++;
+                    })
+                    .setClass("mod-cta")
+            );
         for (let i = 0; i <= this.plugin.settings.files.length; i++) {
             this.addTextField(index, this.plugin.settings.files[index]);
             index++;
         }
     }
-    addTextField(index: number, text: string = "") {
-        new Setting(this.containerEl)
-            .setName("File to open with command")
-            .setDesc("With file extension!")
-            .addText((cb) => {
+    addTextField(
+        index: number,
+        fileObjet: FileObject = { useMoment: false, file: "" }
+    ) {
+        const setting = new Setting(this.containerEl);
+        if (fileObjet.useMoment) {
+            setting.setDesc(
+                "Include file extension(e.g. .md)! Is excluded from moment format."
+            );
+            setting.setName("File to open with command (with moment format)");
+            setting.addMomentFormat((cb) => {
+                let sampleElement: HTMLElement;
+                cb.setDefaultFormat("YY-MM-DD.md");
+                setting.descEl.appendChild(
+                    createFragment((frag) => {
+                        frag.createEl("br");
+                        frag.appendText("For syntax, refer to" + " ");
+                        frag.createEl(
+                            "a",
+                            {
+                                text: "format reference",
+                                href: "https://momentjs.com/docs/#/displaying/format/",
+                            },
+                            (a) => {
+                                a.setAttr("target", "_blank");
+                            }
+                        );
+                        frag.createEl("br");
+                        frag.appendText(
+                            "Your current syntax looks like this" + ": "
+                        );
+                        sampleElement = frag.createEl("b", {
+                            cls: "u-pop",
+                            text: getMomentFromFile(fileObjet.file),
+                        });
+                        frag.createEl("br");
+                    })
+                );
+                cb.setValue(fileObjet.file);
+                cb.onChange((value) => {
+                    sampleElement.setText(getMomentFromFile(value));
+                    this.plugin.settings.files[index] = {
+                        useMoment: true,
+                        file: value,
+                    };
+                    this.plugin.saveSettings();
+                });
+            });
+        } else {
+            setting.setDesc("Include file extension(e.g. .md)!");
+            setting.setName("File to open with command");
+            setting.addText((cb) => {
                 new FileSuggest(this.app, cb.inputEl);
                 cb.setPlaceholder("Directory/file.md")
-                    .setValue(this.plugin.settings.files[index])
-                    .setValue(text)
+                    .setValue(fileObjet.file)
                     .onChange((value) => {
-                        this.plugin.settings.files[index] = value;
+                        this.plugin.settings.files[index] = {
+                            useMoment: false,
+                            file: value,
+                        };
                         this.plugin.saveSettings();
                     });
             });
+        }
     }
 }
