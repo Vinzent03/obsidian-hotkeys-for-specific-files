@@ -108,12 +108,13 @@ export default class SpecificFilesPlugin extends Plugin {
             if (!fileObject || !fileObject.file) continue;
 
             const fileName: string = fileObject.file;
-            let parsedFileName: string;
-            if (fileObject.useMoment) {
-                parsedFileName = getMomentFromFile(fileName);
-            } else {
-                parsedFileName = fileName;
-            }
+            const getParsedName = () => {
+                if (fileObject.useMoment) {
+                    return getMomentFromFile(fileName);
+                } else {
+                    return fileName;
+                }
+            };
             plugin.addCommand({
                 id: fileName,
                 name: `Open ${fileName.substring(
@@ -126,7 +127,7 @@ export default class SpecificFilesPlugin extends Plugin {
 
                         this.app.workspace.iterateAllLeaves((leaf) => {
                             const file: TFile = (leaf.view as any).file;
-                            if (!found && file?.path === parsedFileName) {
+                            if (!found && file?.path === getParsedName()) {
                                 this.app.workspace.setActiveLeaf(leaf, {
                                     focus: true,
                                 });
@@ -135,12 +136,12 @@ export default class SpecificFilesPlugin extends Plugin {
                         });
                         if (!found) {
                             plugin.app.workspace.openLinkText(
-                                parsedFileName,
+                                getParsedName(),
                                 "",
                             );
                         }
                     } else {
-                        plugin.app.workspace.openLinkText(parsedFileName, "");
+                        plugin.app.workspace.openLinkText(getParsedName(), "");
                     }
                 },
             });
@@ -152,7 +153,7 @@ export default class SpecificFilesPlugin extends Plugin {
                 )} in new tab`,
                 callback: () => {
                     plugin.app.workspace.openLinkText(
-                        parsedFileName,
+                        getParsedName(),
                         "",
                         "tab",
                     );
@@ -184,7 +185,7 @@ export default class SpecificFilesPlugin extends Plugin {
                         });
                         const tfile =
                             this.app.vault.getAbstractFileByPath(
-                                parsedFileName,
+                                getParsedName(),
                             );
                         leaf.openFile(tfile);
                     },
