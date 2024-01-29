@@ -1,7 +1,5 @@
-
 import { createPopper, Instance as PopperInstance } from "@popperjs/core";
 import { App, ISuggestOwner, Scope } from "obsidian";
-
 
 class Suggest<T> {
     private owner: ISuggestOwner<T>;
@@ -10,19 +8,23 @@ class Suggest<T> {
     private selectedItem: number;
     private containerEl: HTMLElement;
 
-    constructor(owner: ISuggestOwner<T>, containerEl: HTMLElement, scope: Scope) {
+    constructor(
+        owner: ISuggestOwner<T>,
+        containerEl: HTMLElement,
+        scope: Scope,
+    ) {
         this.owner = owner;
         this.containerEl = containerEl;
 
         containerEl.on(
             "click",
             ".suggestion-item",
-            this.onSuggestionClick.bind(this)
+            this.onSuggestionClick.bind(this),
         );
         containerEl.on(
             "mousemove",
             ".suggestion-item",
-            this.onSuggestionMouseover.bind(this)
+            this.onSuggestionMouseover.bind(this),
         );
 
         scope.register([], "ArrowUp", (event) => {
@@ -83,7 +85,10 @@ class Suggest<T> {
     }
 
     setSelectedItem(selectedIndex: number, scrollIntoView: boolean) {
-        const normalizedIndex = this.wrapAround(selectedIndex, this.suggestions.length);
+        const normalizedIndex = this.wrapAround(
+            selectedIndex,
+            this.suggestions.length,
+        );
         const prevSelectedSuggestion = this.suggestions[this.selectedItem];
         const selectedSuggestion = this.suggestions[normalizedIndex];
 
@@ -129,7 +134,7 @@ export abstract class TextInputSuggest<T> implements ISuggestOwner<T> {
             ".suggestion-container",
             (event: MouseEvent) => {
                 event.preventDefault();
-            }
+            },
         );
     }
 

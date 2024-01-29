@@ -45,7 +45,7 @@ export default class SpecificFilesPlugin extends Plugin {
         this.setCommands(this);
         this.app.vault.on("rename", (file, oldPath) => {
             const oldItemIndex = this.settings.files.findIndex(
-                (item) => item.file === oldPath
+                (item) => item.file === oldPath,
             );
             if (oldItemIndex >= 0) {
                 this.settings.files[oldItemIndex].file = file.path;
@@ -57,14 +57,14 @@ export default class SpecificFilesPlugin extends Plugin {
                 if (hotkeys) {
                     (this.app as any).hotkeyManager.setHotkeys(
                         this.manifest.id + ":" + file.path,
-                        hotkeys
+                        hotkeys,
                     );
                 }
             }
         });
         this.app.vault.on("delete", (file) => {
             const oldItemIndex = this.settings.files.findIndex(
-                (item) => item.file === file.path
+                (item) => item.file === file.path,
             );
             if (oldItemIndex >= 0) {
                 this.settings.files.splice(oldItemIndex, 1);
@@ -82,7 +82,7 @@ export default class SpecificFilesPlugin extends Plugin {
         this.settings = Object.assign(
             {},
             DEFAULT_SETTINGS,
-            await this.loadData()
+            await this.loadData(),
         );
         let changed = false;
         for (var i = 0; i < this.settings.files.length; i++) {
@@ -118,7 +118,7 @@ export default class SpecificFilesPlugin extends Plugin {
                 id: fileName,
                 name: `Open ${fileName.substring(
                     0,
-                    fileName.lastIndexOf(".")
+                    fileName.lastIndexOf("."),
                 )}`,
                 callback: () => {
                     if (this.settings.useExistingPane) {
@@ -136,7 +136,7 @@ export default class SpecificFilesPlugin extends Plugin {
                         if (!found) {
                             plugin.app.workspace.openLinkText(
                                 parsedFileName,
-                                ""
+                                "",
                             );
                         }
                     } else {
@@ -148,13 +148,13 @@ export default class SpecificFilesPlugin extends Plugin {
                 id: `${fileName}-new-tab`,
                 name: `Open ${fileName.substring(
                     0,
-                    fileName.lastIndexOf(".")
+                    fileName.lastIndexOf("."),
                 )} in new tab`,
                 callback: () => {
                     plugin.app.workspace.openLinkText(
                         parsedFileName,
                         "",
-                        "tab"
+                        "tab",
                     );
                 },
             });
@@ -164,7 +164,7 @@ export default class SpecificFilesPlugin extends Plugin {
                     id: `${fileName}-hover-editor`,
                     name: `Open ${fileName.substring(
                         0,
-                        fileName.lastIndexOf(".")
+                        fileName.lastIndexOf("."),
                     )} in Hover Editor`,
                     callback: () => {
                         const hoverEditor = (this.app as any).plugins.plugins[
@@ -172,7 +172,7 @@ export default class SpecificFilesPlugin extends Plugin {
                         ];
                         if (!hoverEditor) {
                             new Notice(
-                                "Cannot find Hover Editor plugin. Please file an issue."
+                                "Cannot find Hover Editor plugin. Please file an issue.",
                             );
                             return;
                         }
@@ -184,7 +184,7 @@ export default class SpecificFilesPlugin extends Plugin {
                         });
                         const tfile =
                             this.app.vault.getAbstractFileByPath(
-                                parsedFileName
+                                parsedFileName,
                             );
                         leaf.openFile(tfile);
                     },
@@ -204,7 +204,7 @@ class SettingsTab extends PluginSettingTab {
     display(): void {
         // remove empty entries
         this.plugin.settings.files = this.plugin.settings.files.filter(
-            (file) => file != null && file.file != ""
+            (file) => file != null && file.file != "",
         );
         this.plugin.saveSettings();
 
@@ -215,7 +215,7 @@ class SettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Prefer existing panes")
             .setDesc(
-                "Turn on to prefer existing panes and only open it in the current pane if the files isn't opened already."
+                "Turn on to prefer existing panes and only open it in the current pane if the files isn't opened already.",
             )
             .addToggle((cb) => {
                 cb.onChange((b) => {
@@ -227,7 +227,7 @@ class SettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Add command to open file in Hover Editor")
             .setDesc(
-                "Needs the Hover Editor plugin to be installed and enabled."
+                "Needs the Hover Editor plugin to be installed and enabled.",
             )
             .addToggle((cb) => {
                 cb.onChange((b) => {
@@ -239,7 +239,7 @@ class SettingsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("Add new commands (required after changes)")
             .setDesc(
-                "To remove already added commands, you have to reload Obsidian (or disable and enable this plugin) "
+                "To remove already added commands, you have to reload Obsidian (or disable and enable this plugin) ",
             )
             .addButton((cb) =>
                 cb
@@ -247,7 +247,7 @@ class SettingsTab extends PluginSettingTab {
                     .onClick(() => {
                         this.plugin.setCommands(this.plugin);
                     })
-                    .setClass("mod-cta")
+                    .setClass("mod-cta"),
             );
         new Setting(containerEl)
             .setName("Create new text field")
@@ -258,7 +258,7 @@ class SettingsTab extends PluginSettingTab {
                         this.addTextField(index);
                         index++;
                     })
-                    .setClass("mod-cta")
+                    .setClass("mod-cta"),
             );
         new Setting(containerEl)
             .setName("Create new text field with moment format")
@@ -269,7 +269,7 @@ class SettingsTab extends PluginSettingTab {
                         this.addTextField(index, { useMoment: true, file: "" });
                         index++;
                     })
-                    .setClass("mod-cta")
+                    .setClass("mod-cta"),
             );
         for (let i = 0; i <= this.plugin.settings.files.length; i++) {
             this.addTextField(index, this.plugin.settings.files[index]);
@@ -278,12 +278,12 @@ class SettingsTab extends PluginSettingTab {
     }
     addTextField(
         index: number,
-        fileObjet: FileObject = { useMoment: false, file: "" }
+        fileObjet: FileObject = { useMoment: false, file: "" },
     ) {
         const setting = new Setting(this.containerEl);
         if (fileObjet.useMoment) {
             setting.setDesc(
-                "Include file extension(e.g. .md)! Is excluded from moment format."
+                "Include file extension(e.g. .md)! Is excluded from moment format.",
             );
             setting.setName("File to open with command (with moment format)");
             setting.addMomentFormat((cb) => {
@@ -301,18 +301,18 @@ class SettingsTab extends PluginSettingTab {
                             },
                             (a) => {
                                 a.setAttr("target", "_blank");
-                            }
+                            },
                         );
                         frag.createEl("br");
                         frag.appendText(
-                            "Your current syntax looks like this" + ": "
+                            "Your current syntax looks like this" + ": ",
                         );
                         sampleElement = frag.createEl("b", {
                             cls: "u-pop",
                             text: getMomentFromFile(fileObjet.file),
                         });
                         frag.createEl("br");
-                    })
+                    }),
                 );
                 cb.setValue(fileObjet.file);
                 cb.onChange((value) => {
